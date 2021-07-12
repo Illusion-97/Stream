@@ -1,5 +1,9 @@
 package illu.stream;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -7,14 +11,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 class Personne {
-    private String nom, prenom, genre;
+    private String nom, prenom, genre, ville;
     private int annee_naiss;
+    private double salaire;
 
-    public Personne(String nom, String prenom, String genre, int annee) {
+    public Personne(String nom, String prenom, String genre, String ville, int annee_naiss, double salaire) {
         this.nom = nom;
         this.prenom = prenom;
         this.genre = genre;
-        annee_naiss = annee;
+        this.ville = ville;
+        this.annee_naiss = annee_naiss;
+        this.salaire = salaire;
     }
 
     @Override
@@ -23,7 +30,9 @@ class Personne {
                 "nom='" + nom + '\'' +
                 ", prenom='" + prenom + '\'' +
                 ", genre='" + genre + '\'' +
+                ", ville='" + ville + '\'' +
                 ", annee_naiss=" + annee_naiss +
+                ", salaire=" + salaire +
                 '}';
     }
 
@@ -31,52 +40,108 @@ class Personne {
         return nom;
     }
 
-    public void setNom(String nom) {
-        this.nom = nom;
-    }
-
     public String getPrenom() {
         return prenom;
-    }
-
-    public void setPrenom(String prenom) {
-        this.prenom = prenom;
     }
 
     public String getGenre() {
         return genre;
     }
 
-    public void setGenre(String genre) {
-        this.genre = genre;
+    public String getVille() {
+        return ville;
     }
 
     public int getAnnee_naiss() {
         return annee_naiss;
     }
 
+    public double getSalaire() {
+        return salaire;
+    }
+
+    public void setNom(String nom) {
+        this.nom = nom;
+    }
+
+    public void setPrenom(String prenom) {
+        this.prenom = prenom;
+    }
+
+    public void setGenre(String genre) {
+        this.genre = genre;
+    }
+
+    public void setVille(String ville) {
+        this.ville = ville;
+    }
+
     public void setAnnee_naiss(int annee_naiss) {
         this.annee_naiss = annee_naiss;
+    }
+
+    public void setSalaire(double salaire) {
+        this.salaire = salaire;
     }
 }
 
 public class Ex3 {
 
     public static void main(String[] args) {
-        Personne[] peoples = {new Personne("Ad","ya","m",1985), new Personne("Zd","ya","m",1985), new Personne("Dd","ya","m",1985)};
+
+        Personne[] peoples = getlist().toArray(Personne[]::new);
+
+        System.out.println("Nés apres 1991 :");
         Stream.of(peoples).filter(pers -> pers.getAnnee_naiss() > 1991).forEach(System.out::println);
+        System.out.println();
+        System.out.println("Nés en 1995 :");
         Stream.of(peoples).filter(pers -> pers.getAnnee_naiss() == 1995).map(Personne::getNom).forEach(System.out::println);
+        System.out.println();
+        System.out.println("Nés avant 1990 (Ordered + count) :");
         AtomicInteger count = new AtomicInteger(0);
         Stream.of(peoples).filter(pers -> pers.getAnnee_naiss() < 1990).map(Personne::getNom).sorted().forEach(name -> {
             System.out.println(name);
             count.getAndIncrement();
         });
         System.out.println("Count : " + count);
+        System.out.println();
+        System.out.println("All Ordered (2 level) :");
         Stream.of(peoples).sorted(Comparator.comparing(Personne::getNom).thenComparing(Personne::getPrenom)).forEach(System.out::println);
-        Stream.of(peoples).filter(personne -> personne.getGenre().equals("F")).filter(personne -> personne.getNom().startsWith("j")).forEach(System.out::println);
+        System.out.println();
+        System.out.println("Gender 'F' Name in 'T'");
+        Stream.of(peoples).filter(personne -> personne.getGenre().equals("F")).filter(personne -> personne.getNom().startsWith("T")).forEach(System.out::println);
+        System.out.println();
+        System.out.println("Gender lowerCase + Gender 'h' :");
         Stream.of(peoples).forEach(personne -> {
             personne.setGenre(personne.getGenre().toLowerCase());
             if (personne.getGenre().equals("h")) System.out.println(personne);
         });
+        System.out.println();
+        System.out.println("Younger Year");
+        Stream.of(peoples).map(Personne::getAnnee_naiss).mapToInt(Integer::intValue).max().ifPresent(System.out::println);
+        System.out.println();
+        System.out.println("Salaire Moyen Lyon");
+        Stream.of(peoples).filter(personne -> personne.getVille().equals("Lyon")).mapToDouble(Personne::getSalaire).average().ifPresent(System.out::println);
+    }
+
+    private static List<String> getlines(String path){
+        List<String> lines = new ArrayList<>();
+        try (Stream<String> pers = Files.lines(Path.of(path))){
+            lines = pers.collect(Collectors.toList());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return lines;
+    }
+
+    private static List<Personne> getlist(){
+        String filepath = "src/illu/stream/personnes.txt";
+        List<Personne> personneList = new ArrayList<>();
+        List<String> lines = getlines(filepath);
+        for (int i =1; i< lines.size(); i++){
+            String[] line = lines.get(i).split(",");
+            personneList.add(new Personne(line[1].trim(),line[0].trim(),line[4].trim(),line[5].trim(),Integer.parseInt(line[2].trim()),Double.parseDouble(line[3].trim())));
+        }
+        return personneList;
     }
 }
