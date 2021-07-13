@@ -89,7 +89,8 @@ public class Ex3 {
 
     public static void main(String[] args) {
 
-        Personne[] peoples = getlist().toArray(Personne[]::new);
+        String filepath = "src/illu/stream/personnes.txt";
+        Personne[] peoples = getlist(filepath).toArray(Personne[]::new);
 
         System.out.println("Nés apres 1991 :");
         Stream.of(peoples).filter(pers -> pers.getAnnee_naiss() > 1991).forEach(System.out::println);
@@ -124,24 +125,17 @@ public class Ex3 {
         Stream.of(peoples).filter(personne -> personne.getVille().equals("Lyon")).mapToDouble(Personne::getSalaire).average().ifPresent(System.out::println);
     }
 
-    private static List<String> getlines(String path){
-        List<String> lines = new ArrayList<>();
+    private static List<Personne> getlist(String path){
+        List<Personne> lines = new ArrayList<>();
         try (Stream<String> pers = Files.lines(Path.of(path))){
-            lines = pers.collect(Collectors.toList());
+            lines = pers.skip(1)
+                    .map(p -> p.split(", "))
+                    .filter(tab -> tab[4].equalsIgnoreCase("f") || tab[4].equalsIgnoreCase("h"))
+                    .map(t -> new Personne(t[1],t[0],t[4],t[5],Integer.parseInt(t[2]),Double.parseDouble(t[3])))
+                    .collect(Collectors.toList());
         } catch (IOException e) {
             e.printStackTrace();
         }
         return lines;
-    }
-
-    private static List<Personne> getlist(){
-        String filepath = "src/illu/stream/personnes.txt";
-        List<Personne> personneList = new ArrayList<>();
-        List<String> lines = getlines(filepath);
-        for (int i =1; i< lines.size(); i++){
-            String[] line = lines.get(i).split(",");
-            personneList.add(new Personne(line[1].trim(),line[0].trim(),line[4].trim(),line[5].trim(),Integer.parseInt(line[2].trim()),Double.parseDouble(line[3].trim())));
-        }
-        return personneList;
     }
 }
